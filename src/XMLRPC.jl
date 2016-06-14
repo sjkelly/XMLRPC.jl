@@ -32,7 +32,10 @@ end
 
 function Base.getindex(proxy::XMLRPCProxy, s::AbstractString)
     function _(m...)
-        XMLRPCCall(XMLRPCMethodCall(proxy, ASCIIString(s)), m)
+        res = post(XMLRPCCall(XMLRPCMethodCall(proxy, ASCIIString(s)), m))
+        h = headers(res)
+        h["Content-Type"] == "text/xml" || error("Content is not text/xml!\n"*readall(res))
+        xmlrpc_parse(readall(res))
     end
 end
 
@@ -110,7 +113,7 @@ end
 function xmlrpc_parse(s::AbstractString)
     x = parse_string(s)
     xroot = root(x)
-    name(xroot) == "methodResponse" || throw(XMLRPCResposeError())
+    name(xroot) == "methodResponse" || error("malformed XMLRPC response")
     xmlrpc_parse(collect(child_elements(xroot))[1])
 end
 
