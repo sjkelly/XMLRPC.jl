@@ -26,13 +26,13 @@ A fully determined XMLRPC call with parameters specified
 """
 immutable XMLRPCCall
     method::XMLRPCMethodCall
-    parameters::Vector
+    parameters::Tuple
 end
 
 
 function Base.getindex(proxy::XMLRPCProxy, s::AbstractString)
     function _(m...)
-        XMLRPCCall(XMLRPCMethodCall(proxy, ASCIIString(s)), [m...])
+        XMLRPCCall(XMLRPCMethodCall(proxy, ASCIIString(s)), m)
     end
 end
 
