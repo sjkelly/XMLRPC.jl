@@ -72,6 +72,10 @@ function rpc_arg(x::XMLElement, p::Bool)
     add_text(new_child(new_child(x, "value"), "boolean"), p?"true":"false")
 end
 
+function rpc_arg(x::XMLElement, p::Float64)
+    add_text(new_child(new_child(x, "value"), "double"), p)
+end
+
 function rpc_arg(x::XMLElement, p::AbstractString)
     add_text(new_child(new_child(x, "value"), "string"), p)
 end
