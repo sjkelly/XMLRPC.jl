@@ -68,7 +68,11 @@ end
 Convert a value, Dict, or Vector into an XMLRPC snippet.
 """
 function rpc_arg(x::XMLElement, p::Int32)
-    add_text(new_child(new_child(x, "value"), "i4"), p)
+    add_text(new_child(new_child(x, "value"), "i4"), string(p))
+end
+
+function rpc_arg(x::XMLElement, p::Int64)
+    add_text(new_child(new_child(x, "value"), "i4"), string(Int32(p)))
 end
 
 function rpc_arg(x::XMLElement, p::Bool)
@@ -76,7 +80,7 @@ function rpc_arg(x::XMLElement, p::Bool)
 end
 
 function rpc_arg(x::XMLElement, p::Float64)
-    add_text(new_child(new_child(x, "value"), "double"), p)
+    add_text(new_child(new_child(x, "value"), "double"), string(p))
 end
 
 function rpc_arg(x::XMLElement, p::AbstractString)
@@ -84,7 +88,7 @@ function rpc_arg(x::XMLElement, p::AbstractString)
 end
 
 function rpc_arg(x::XMLElement, p::DateTime)
-    add_text(new_child(new_child(x, "value"), "dateTime.iso8601"), p)
+    add_text(new_child(new_child(x, "value"), "dateTime.iso8601"), string(p))
 end
 
 # TODO new_child for base64
