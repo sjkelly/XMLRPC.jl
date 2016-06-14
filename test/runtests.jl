@@ -20,6 +20,7 @@ b = v["test"]("foo", Any[])
 @show string(XMLDocument(b))
 
 @show res = post(XMLRPCProxy("https://odoo.ultimachine.com/xmlrpc/2/common")["version"]())
-@show readall(res)
+x = xmlrpc_parse(readall(res))
+@show x
 res = post(XMLRPCProxy("https://odoo.ultimachine.com/xmlrpc/2/common")["version"]())
 @show typeof(res)

@@ -1,11 +1,11 @@
 module XMLRPC
 
 using LightXML, Requests
-export XMLRPCProxy, XMLRPCMethodCall, XMLRPCCall
+export XMLRPCProxy, XMLRPCMethodCall, XMLRPCCall, xmlrpc_parse
 
 
 """
-An XML RPC Proxy wrapper type for the server URL
+An XML RPC Proxy wrapper type for the server URL.
 """
 immutable XMLRPCProxy
     url::AbstractString
@@ -106,6 +106,59 @@ function rpc_arg(x::XMLElement, p::Pair)
     add_text(n, string(p.first))
     rpc_arg(m, p.second)
 end
+
+function xmlrpc_parse(s::AbstractString)
+    x = parse_string(s)
+    xroot = root(x)
+    name(xroot) == "methodResponse" || throw(XMLRPCResposeError())
+    xmlrpc_parse(collect(child_elements(xroot))[1])
+end
+
+function xmlrpc_parse(x::XMLElement)
+    if name(x) == "value"
+        c = collect(child_elements(x))[1]
+        if name(c) == "i4" || name(c) == "int"
+            return parse(Int32, content(c))
+        elseif name(c) == "dateTime.iso8601"
+            return DateTime(content(c))
+        elseif name(c) == "boolean"
+            return content(c) == "true"
+        elseif name(c) == "double"
+            return parse(Float64, content(c))
+        elseif name(c) == "base64"
+            return base64decode(content(c))
+        elseif name(c) == "string"
+            return content(c)
+        elseif name(c) == "array"
+            c = collect(child_elements(c))[1] # <data>
+            arr = []
+            for elt in child_elements(c)
+                push!(arr, xmlrpc_parse(elt))
+            end
+            arr
+        elseif name(c) == "struct"
+            d = Dict()
+            for elt in child_elements(c)
+                push!(d, xmlrpc_parse(elt))
+            end
+            return d
+        end
+    elseif name(x) == "member"
+        c = collect(child_elements(x))
+        n = content(c[1]) # name
+        v = xmlrpc_parse(c[2]) # value
+        return Pair(n,v)
+    elseif name(x) == "params"
+        arr = []
+        for elt in child_elements(x)
+            push!(arr, xmlrpc_parse(elt))
+        end
+        return arr
+    elseif name(x) == "param"
+        return xmlrpc_parse(collect(child_elements(x))[1])
+    end
+end
+
 
 
 
