@@ -21,3 +21,4 @@ b = v["test"]("foo")
 
 @show res = post(XMLRPCProxy("https://odoo.ultimachine.com/xmlrpc/2/common")["version"]())
 @show readall(res)
+@time post(XMLRPCProxy("https://odoo.ultimachine.com/xmlrpc/2/common")["version"]())

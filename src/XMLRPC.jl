@@ -12,7 +12,7 @@ immutable XMLRPCProxy
 end
 
 """
-
+An XMLRPC call used for dispatch.
 """
 immutable XMLRPCMethodCall
     proxy::XMLRPCProxy
@@ -22,8 +22,7 @@ end
 XMLRPCArguments = Union{Int32, Bool, AbstractString, Float64, DateTime, Dict, Vector} # base64 ommited
 
 """
-
-
+A fully determined XMLRPC call with parameters specified
 """
 immutable XMLRPCCall
     method::XMLRPCMethodCall
@@ -37,6 +36,9 @@ function Base.getindex(proxy::XMLRPCProxy, s::AbstractString)
     end
 end
 
+"""
+Execute an XMLRPC call via HTTP POST.
+"""
 function Requests.post(x::XMLRPCCall)
     xdoc = XMLDocument(x)
     post(url(x); headers=Dict("Content-type" => "text/xml"), data=string(xdoc))
@@ -44,6 +46,9 @@ end
 
 url(x::XMLRPCCall) = x.method.proxy.url
 
+"""
+Convert a `XMLRPCCall` into XML.
+"""
 function LightXML.XMLDocument(x::XMLRPCCall)
     xdoc = XMLDocument()
     xroot = create_root(xdoc, "methodCall")
@@ -56,6 +61,9 @@ function LightXML.XMLDocument(x::XMLRPCCall)
     xdoc
 end
 
+"""
+Convert a value, Dict, or Vector into an XMLRPC snippet.
+"""
 function rpc_arg(x::XMLElement, p::Int32)
     add_text(new_child(new_child(x, "value"), "i4"), p)
 end
@@ -73,6 +81,25 @@ function rpc_arg(x::XMLElement, p::DateTime)
 end
 
 # TODO new_child for base64
+
+function rpc_arg(x::XMLElement, p::Vector)
+    rpc_arg(new_child(new_child(x, "array"), "data"), p)
+end
+
+function rpc_arg(x::XMLElement, d::Dict)
+    s = new_child(x, "struct")
+    for p in d
+        rpc_arg(s, p)
+    end
+end
+
+function rpc_arg(x::XMLElement, p::Pair)
+    m = new_child(x, "member")
+    n = new_child(m, "name")
+    add_text(n, string(p.first))
+    rpc_arg(m, p.second)
+end
+
 
 
 end # module
