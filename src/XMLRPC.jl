@@ -155,13 +155,7 @@ function xmlrpc_parse(x::XMLElement)
         n = content(c[1]) # name
         v = xmlrpc_parse(c[2]) # value
         return Pair(n,v)
-    elseif name(x) == "params"
-        arr = []
-        for elt in child_elements(x)
-            push!(arr, xmlrpc_parse(elt))
-        end
-        return arr
-    elseif name(x) == "param"
+    elseif name(x) == "params" || name(x) == "param" # always one param on return
         return xmlrpc_parse(collect(child_elements(x))[1])
     end
 end
