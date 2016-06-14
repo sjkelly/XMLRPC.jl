@@ -83,7 +83,10 @@ end
 # TODO new_child for base64
 
 function rpc_arg(x::XMLElement, p::Vector)
-    rpc_arg(new_child(new_child(x, "array"), "data"), p)
+    d = new_child(new_child(x, "array"), "data")
+    for e in p
+        rpc_arg(d, e)
+    end
 end
 
 function rpc_arg(x::XMLElement, d::Dict)
