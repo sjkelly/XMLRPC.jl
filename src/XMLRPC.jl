@@ -158,6 +158,8 @@ function xmlrpc_parse(x::XMLElement)
         return Pair(n,v)
     elseif name(x) == "params" || name(x) == "param" # always one param on return
         return xmlrpc_parse(collect(child_elements(x))[1])
+    elseif name(x) == "fault"
+        error("XMLRPC Fault:\n$x")
     end
 end
 
