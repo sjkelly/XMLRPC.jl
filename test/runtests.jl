@@ -5,22 +5,33 @@ using Base.Test
 
 # Use the Odoo demo instance for testing
 
-v = XMLRPCProxy("http://demo.odoo.com/")
-@test v.url == "http://demo.odoo.com/"
+v = XMLRPCProxy("http://demo.odoo.com/start")
+v.url == "http://demo.odoo.com/start"
 
+res = v["start"]()
 
-a = v["test"](23,10)
-@test a.method.name == "test"
-@test a.parameters == (23,10)
+@test typeof(res) == Dict{Any, Any}
 
+url = res["host"]
+pw = res["password"]
+db = res["database"]
+un = res["user"]
 
-b = v["test"]("foo", Any[])
-@test b.parameters == ("foo", Any[])
+common = XMLRPCProxy(url*"/xmlrpc/2/common")
 
-@show string(XMLDocument(b))
+uid = common["authenticate"](db, un, pw, [])
 
-@show res = post(XMLRPCProxy("https://odoo.ultimachine.com/xmlrpc/2/common")["version"]())
-x = xmlrpc_parse(readall(res))
-@show x
-res = post(XMLRPCProxy("https://odoo.ultimachine.com/xmlrpc/2/common")["version"]())
-@show typeof(res)
+models = XMLRPCProxy(url*"/xmlrpc/2/object")
+
+b = models["execute_kw"](db, uid, pw,
+    "res.partner", "check_access_rights",
+    ["read"], Dict("raise_exception"=> false))
+
+@test b == true
+
+c = models["execute_kw"](db, uid, pw,
+    "res.partner", "search",
+    Any[Any[Any["is_company", "=", true], Any["customer", "=", true]]])
+
+@test typeof(c) == Vector{Any}
+@test typeof(c[1]) == Int32
