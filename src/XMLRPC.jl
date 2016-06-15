@@ -35,7 +35,8 @@ function Base.getindex(proxy::XMLRPCProxy, s::AbstractString)
         res = post(XMLRPCCall(XMLRPCMethodCall(proxy, ASCIIString(s)), m))
         h = headers(res)
         h["Content-Type"] == "text/xml" || error("Content is not text/xml!\n"*readall(res))
-        xmlrpc_parse(readall(res))
+        r = readall(res)
+        xmlrpc_parse(r)
     end
 end
 
@@ -142,7 +143,7 @@ function xmlrpc_parse(x::XMLElement)
             for elt in child_elements(c)
                 push!(arr, xmlrpc_parse(elt))
             end
-            arr
+            return arr
         elseif name(c) == "struct"
             d = Dict()
             for elt in child_elements(c)
