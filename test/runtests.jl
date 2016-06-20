@@ -1,6 +1,4 @@
 using XMLRPC
-using LightXML
-using Requests
 using Base.Test
 
 # Use the Odoo demo instance for testing
