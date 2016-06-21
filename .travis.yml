@@ -8,12 +8,12 @@ julia:
   - nightly
 notifications:
   email: false
+matrix:
+  allow_failures:
+    - julia: 0.5
+  fast_finish: true
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd()); Pkg.build("XMLRPC"); Pkg.test("XMLRPC"; coverage=true)'
 after_success:
   - julia -e 'cd(Pkg.dir("XMLRPC")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
-matrix:
-  allow_failures:
-    - julia: 0.5
-  fast_finish: true
