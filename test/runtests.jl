@@ -1,5 +1,5 @@
 using XMLRPC
-using Base.Test
+using Test
 
 # Use the Odoo demo instance for testing
 

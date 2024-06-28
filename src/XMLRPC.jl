@@ -1,40 +1,40 @@
-VERSION >= v"0.4.0-dev+6521" && __precompile__(true)
-
 module XMLRPC
 
-using LightXML, Requests
+using LightXML
+using HTTP
+using Dates
+using Base64: base64decode
+
 export XMLRPCProxy, XMLRPCMethodCall, XMLRPCCall, xmlrpc_parse
 
 
 """
 An XML RPC Proxy wrapper type for the server URL.
 """
-immutable XMLRPCProxy
-    url::AbstractString
+struct XMLRPCProxy
+    url::String
 end
 
 """
 An XMLRPC call used for dispatch.
 """
-immutable XMLRPCMethodCall
+struct XMLRPCMethodCall
     proxy::XMLRPCProxy
     name::AbstractString
 end
 
-XMLRPCArguments = Union{Int32, Bool, AbstractString, Float64, DateTime, Dict, Vector} # base64 ommited
-
 """
 A fully determined XMLRPC call with parameters specified
 """
-immutable XMLRPCCall
+struct XMLRPCCall
     method::XMLRPCMethodCall
     parameters::Tuple
 end
 
 
 function Base.getindex(proxy::XMLRPCProxy, s::AbstractString)
-    function _(m...)
-        res = post(XMLRPCCall(XMLRPCMethodCall(proxy, ASCIIString(s)), m))
+    function ret(m...)
+        res = HTTP.post(XMLRPCCall(XMLRPCMethodCall(proxy, string(s)), m))
         h = headers(res)
         h["Content-Type"] == "text/xml" || error("Content is not text/xml!\n"*readall(res))
         r = readall(res)
@@ -45,9 +45,9 @@ end
 """
 Execute an XMLRPC call via HTTP POST.
 """
-function Requests.post(x::XMLRPCCall)
+function HTTP.post(x::XMLRPCCall)
     xdoc = XMLDocument(x)
-    post(url(x); headers=Dict("Content-type" => "text/xml"), data=string(xdoc))
+    HTTP.post(url(x); headers=Dict("Content-type" => "text/xml"), data=string(xdoc))
 end
 
 url(x::XMLRPCCall) = x.method.proxy.url
@@ -79,14 +79,14 @@ function rpc_arg(x::XMLElement, p::Int64)
 end
 
 function rpc_arg(x::XMLElement, p::Bool)
-    add_text(new_child(new_child(x, "value"), "boolean"), p?"1":"0")
+    add_text(new_child(new_child(x, "value"), "boolean"), p ? "1" : "0")
 end
 
 function rpc_arg(x::XMLElement, p::Float64)
     add_text(new_child(new_child(x, "value"), "double"), string(p))
 end
 
-function rpc_arg(x::XMLElement, p::AbstractString)
+function rpc_arg(x::XMLElement, p::String)
     add_text(new_child(new_child(x, "value"), "string"), p)
 end
 
