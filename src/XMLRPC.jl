@@ -1,61 +1,55 @@
 module XMLRPC
 
 using LightXML
-using HTTP
+using HTTP: HTTP
 using Dates
 using Base64: base64decode
-
-export XMLRPCProxy, XMLRPCMethodCall, XMLRPCCall, xmlrpc_parse
-
 
 """
 An XML RPC Proxy wrapper type for the server URL.
 """
-struct XMLRPCProxy
+struct Proxy
     url::String
 end
 
 """
 An XMLRPC call used for dispatch.
 """
-struct XMLRPCMethodCall
-    proxy::XMLRPCProxy
-    name::AbstractString
+struct MethodCall
+    proxy::Proxy
+    name::String
 end
 
 """
 A fully determined XMLRPC call with parameters specified
 """
-struct XMLRPCCall
-    method::XMLRPCMethodCall
+struct Call
+    method::MethodCall
     parameters::Tuple
 end
 
 
-function Base.getindex(proxy::XMLRPCProxy, s::AbstractString)
+function Base.getindex(proxy::Proxy, s::AbstractString)
     function ret(m...)
-        res = HTTP.post(XMLRPCCall(XMLRPCMethodCall(proxy, string(s)), m))
-        h = headers(res)
-        h["Content-Type"] == "text/xml" || error("Content is not text/xml!\n"*readall(res))
-        r = readall(res)
-        xmlrpc_parse(r)
+        meth = Call(MethodCall(proxy, string(s)), m)
+        xdoc = xml(meth)
+        headers = Dict(
+            "Content-Type" => "text/xml",
+            "User-Agent" => "Julia XML-RPC Client"
+        )
+        res = HTTP.post(proxy.url, headers, string(xdoc))
+        if res.status!= 200
+            error("HTTP error $res.status: $res.body")
+        end
+        xmlrpc_parse(String(res.body))
     end
 end
 
-"""
-Execute an XMLRPC call via HTTP POST.
-"""
-function HTTP.post(x::XMLRPCCall)
-    xdoc = XMLDocument(x)
-    HTTP.post(url(x); headers=Dict("Content-type" => "text/xml"), data=string(xdoc))
-end
-
-url(x::XMLRPCCall) = x.method.proxy.url
 
 """
 Convert a `XMLRPCCall` into XML.
 """
-function LightXML.XMLDocument(x::XMLRPCCall)
+function xml(x::Call)
     xdoc = XMLDocument()
     xroot = create_root(xdoc, "methodCall")
     xs1 = new_child(xroot, "methodName")
@@ -118,7 +112,7 @@ function rpc_arg(x::XMLElement, p::Pair)
 end
 
 function xmlrpc_parse(s::AbstractString)
-    x = parse_string(s)
+    x = LightXML.parse_string(s)
     xroot = root(x)
     name(xroot) == "methodResponse" || error("malformed XMLRPC response")
     xmlrpc_parse(collect(child_elements(xroot))[1])
