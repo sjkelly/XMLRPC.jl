@@ -7,31 +7,13 @@ spec is currently supported except for fault handling.
 
 ```julia
 
-# https://www.odoo.com/documentation/9.0/api_integration.html
+using XMLRPC
 
-v = XMLRPCProxy("http://demo.odoo.com/start")
+const urlEndpoint = "http://betty.userland.com/RPC2"
+proxy = XMLRPC.Proxy(urlEndpoint)
 
+@test proxy["examples.getStateName"](23) == "Minnesota"
 
-res = v["start"]() # call the "start" method on the server
+@test proxy["examples.getStateNames"](12, 22, 32, 42) == "Idaho\nMichigan\nNew York\nTennessee"
 
-url = res["host"]
-pw = res["password"]
-db = res["database"]
-un = res["user"]
-
-# Call authetication method
-
-common = XMLRPCProxy(url*"/xmlrpc/2/common")
-
-uid = common["authenticate"](db, un, pw, [])
-
-models = XMLRPCProxy(url*"/xmlrpc/2/object")
-
-models["execute_kw"](db, uid, pw,
-    "res.partner", "check_access_rights",
-    ["read"], Dict("raise_exception"=> false))
-
-models["execute_kw"](db, uid, pw,
-    "res.partner", "search",
-    Any[Any[Any["is_company", "=", true], Any["customer", "=", true]]])
 ```
